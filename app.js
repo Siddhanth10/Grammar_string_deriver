@@ -548,10 +548,8 @@ function escapeHtml(str) {
 })();
 
 /* ============================================================
-   Mobile PWA Install Prompt
+   Mobile PWA Install Prompt — in-website instructions only
    ============================================================ */
-
-let deferredInstallPrompt = null;
 
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
@@ -564,7 +562,8 @@ function isStandaloneApp() {
 }
 
 function showMobileInstallPrompt() {
-  if (!isMobileDevice() || isStandaloneApp() || sessionStorage.getItem('pwaInstallDismissed') === '1') return;
+  if (!isMobileDevice() || isStandaloneApp() ||
+      sessionStorage.getItem('pwaInstallDismissed') === '1') return;
 
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
@@ -576,11 +575,26 @@ function showMobileInstallPrompt() {
       <button class="pwa-close" aria-label="Close">×</button>
       <div class="pwa-icon">⟨G⟩</div>
       <h2 id="pwaInstallTitle">Install Grammar String Deriver</h2>
-      <p>Install the app on your phone for quick access and an app-like experience.</p>
-      <button class="pwa-install-btn" id="pwaInstallBtn">📱 Install App</button>
-      <p class="pwa-ios-help" id="pwaIosHelp" hidden>
-        On iPhone/iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong>.
-      </p>
+      <p>Get quick access from your home screen with an app-like experience.</p>
+
+      <div class="pwa-platform-help">
+        <div class="pwa-step">
+          <span>1</span>
+          <div>
+            <strong>${isIOS ? 'Open the Share menu' : 'Open your browser menu'}</strong>
+            <small>${isIOS ? 'Tap the Share button in Safari.' : 'Tap ⋮ in Chrome or your browser.'}</small>
+          </div>
+        </div>
+        <div class="pwa-step">
+          <span>2</span>
+          <div>
+            <strong>${isIOS ? 'Choose “Add to Home Screen”' : 'Choose “Install app” or “Add to Home screen”'}</strong>
+            <small>${isIOS ? 'Then tap Add to finish.' : 'The exact wording may vary by browser.'}</small>
+          </div>
+        </div>
+      </div>
+
+      <button class="pwa-install-btn" id="pwaInstallBtn">✓ Got it</button>
       <button class="pwa-later" id="pwaLaterBtn">Maybe later</button>
     </div>
   `;
@@ -594,36 +608,8 @@ function showMobileInstallPrompt() {
 
   overlay.querySelector('.pwa-close').addEventListener('click', close);
   overlay.querySelector('#pwaLaterBtn').addEventListener('click', close);
-
-  const installBtn = overlay.querySelector('#pwaInstallBtn');
-  const iosHelp = overlay.querySelector('#pwaIosHelp');
-
-  if (isIOS) {
-    installBtn.textContent = '📱 How to Install';
-    iosHelp.hidden = false;
-    installBtn.addEventListener('click', () => {
-      iosHelp.hidden = false;
-    });
-  } else if (deferredInstallPrompt) {
-    installBtn.addEventListener('click', async () => {
-      deferredInstallPrompt.prompt();
-      const choice = await deferredInstallPrompt.userChoice;
-      deferredInstallPrompt = null;
-      if (choice.outcome === 'accepted') overlay.remove();
-    });
-  } else {
-    installBtn.addEventListener('click', () => {
-      iosHelp.textContent = 'Open your browser menu (⋮) and choose “Install app” or “Add to Home screen”.';
-      iosHelp.hidden = false;
-    });
-  }
+  overlay.querySelector('#pwaInstallBtn').addEventListener('click', close);
 }
-
-window.addEventListener('beforeinstallprompt', event => {
-  event.preventDefault();
-  deferredInstallPrompt = event;
-  showMobileInstallPrompt();
-});
 
 window.addEventListener('appinstalled', () => {
   const prompt = document.getElementById('pwaInstallPrompt');
