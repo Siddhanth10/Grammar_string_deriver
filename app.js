@@ -546,3 +546,90 @@ function escapeHtml(str) {
   updateGrammarSummary();
   $('treeControls').hidden = true;
 })();
+
+/* ============================================================
+   Mobile PWA Install Prompt
+   ============================================================ */
+
+let deferredInstallPrompt = null;
+
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+}
+
+function isStandaloneApp() {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+}
+
+function showMobileInstallPrompt() {
+  if (!isMobileDevice() || isStandaloneApp() || sessionStorage.getItem('pwaInstallDismissed') === '1') return;
+
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
+
+  const overlay = document.createElement('div');
+  overlay.id = 'pwaInstallPrompt';
+  overlay.innerHTML = `
+    <div class="pwa-install-card" role="dialog" aria-modal="true" aria-labelledby="pwaInstallTitle">
+      <button class="pwa-close" aria-label="Close">×</button>
+      <div class="pwa-icon">⟨G⟩</div>
+      <h2 id="pwaInstallTitle">Install Grammar String Deriver</h2>
+      <p>Install the app on your phone for quick access and an app-like experience.</p>
+      <button class="pwa-install-btn" id="pwaInstallBtn">📱 Install App</button>
+      <p class="pwa-ios-help" id="pwaIosHelp" hidden>
+        On iPhone/iPad: tap <strong>Share</strong> → <strong>Add to Home Screen</strong>.
+      </p>
+      <button class="pwa-later" id="pwaLaterBtn">Maybe later</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const close = () => {
+    sessionStorage.setItem('pwaInstallDismissed', '1');
+    overlay.remove();
+  };
+
+  overlay.querySelector('.pwa-close').addEventListener('click', close);
+  overlay.querySelector('#pwaLaterBtn').addEventListener('click', close);
+
+  const installBtn = overlay.querySelector('#pwaInstallBtn');
+  const iosHelp = overlay.querySelector('#pwaIosHelp');
+
+  if (isIOS) {
+    installBtn.textContent = '📱 How to Install';
+    iosHelp.hidden = false;
+    installBtn.addEventListener('click', () => {
+      iosHelp.hidden = false;
+    });
+  } else if (deferredInstallPrompt) {
+    installBtn.addEventListener('click', async () => {
+      deferredInstallPrompt.prompt();
+      const choice = await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      if (choice.outcome === 'accepted') overlay.remove();
+    });
+  } else {
+    installBtn.addEventListener('click', () => {
+      iosHelp.textContent = 'Open your browser menu (⋮) and choose “Install app” or “Add to Home screen”.';
+      iosHelp.hidden = false;
+    });
+  }
+}
+
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  showMobileInstallPrompt();
+});
+
+window.addEventListener('appinstalled', () => {
+  const prompt = document.getElementById('pwaInstallPrompt');
+  if (prompt) prompt.remove();
+});
+
+window.addEventListener('load', () => {
+  setTimeout(showMobileInstallPrompt, 1200);
+});
