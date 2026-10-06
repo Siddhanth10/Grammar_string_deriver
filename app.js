@@ -563,7 +563,7 @@ function isStandaloneApp() {
 
 function showMobileInstallPrompt() {
   if (!isMobileDevice() || isStandaloneApp() ||
-      sessionStorage.getItem('pwaInstallDismissed') === '1') return;
+      sessionStorage.getItem('pwaInstallDismissedV2') === '1') return;
 
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
@@ -602,7 +602,7 @@ function showMobileInstallPrompt() {
   document.body.appendChild(overlay);
 
   const close = () => {
-    sessionStorage.setItem('pwaInstallDismissed', '1');
+    sessionStorage.setItem('pwaInstallDismissedV2', '1');
     overlay.remove();
   };
 
