@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grammar String Deriver</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Header -->
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-icon">⟨G⟩</span>
+          <div>
+            <h1>Grammar String Deriver</h1>
+            <p class="tagline">Visualize derivation trees for regular grammars</p>
+          </div>
+        </div>
+        <nav class="header-nav">
+          <button class="btn-icon" id="themeToggle" title="Toggle theme" aria-label="Toggle dark/light theme">🌙</button>
+          <button class="btn-icon" id="helpBtn" title="Help" aria-label="Open help">?</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <!-- LEFT PANEL: Inputs -->
+      <section class="panel panel-left" aria-label="Grammar Input">
+        <div class="panel-header">
+          <h2>📝 Grammar Setup</h2>
+        </div>
+
+        <!-- Grammar Rules -->
+        <div class="form-group">
+          <label for="startSymbol">Start Symbol</label>
+          <input type="text" id="startSymbol" placeholder="e.g. S" maxlength="5" value="S" />
+        </div>
+
+        <div class="form-group">
+          <label>
+            Production Rules
+            <span class="tooltip-anchor" data-tooltip="Format: A → aB | b | ε  (one rule per line)">ⓘ</span>
+          </label>
+          <div class="rule-editor" id="ruleEditor" aria-label="Production rules editor"></div>
+          <button class="btn-secondary btn-sm" id="addRuleBtn">+ Add Rule</button>
+        </div>
+
+        <!-- Presets -->
+        <div class="form-group">
+          <label>Load Example</label>
+          <div class="preset-chips">
+            <button class="chip" data-preset="ab">a*b</button>
+            <button class="chip" data-preset="anbn">Balanced ab</button>
+            <button class="chip" data-preset="binary">Binary</button>
+            <button class="chip" data-preset="identifier">Identifier</button>
+            <button class="chip" data-preset="palindrome">Palindrome</button>
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <!-- Derivation Settings -->
+        <div class="form-group">
+          <label for="targetString">Target String <span class="badge">required</span></label>
+          <input type="text" id="targetString" placeholder='e.g. aab  (use ε for empty)' value="aab" />
+        </div>
+
+        <div class="form-group">
+          <label for="maxSteps">Max Steps (N)
+            <span class="tooltip-anchor" data-tooltip="Maximum number of production rule applications allowed">ⓘ</span>
+          </label>
+          <div class="range-row">
+            <input type="range" id="maxStepsRange" min="1" max="30" value="10" />
+            <input type="number" id="maxSteps" min="1" max="100" value="10" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="strategy">Search Strategy</label>
+          <select id="strategy">
+            <option value="bfs">BFS (Breadth-First — finds shortest derivation)</option>
+            <option value="dfs">DFS (Depth-First)</option>
+          </select>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="deriveBtn">▶ Derive</button>
+          <button class="btn-secondary" id="resetBtn">✕ Reset</button>
+        </div>
+
+        <!-- Grammar Summary -->
+        <div class="grammar-summary card" id="grammarSummary" hidden>
+          <h3>Grammar Info</h3>
+          <div id="summaryContent"></div>
+        </div>
+      </section>
+
+      <!-- RIGHT PANEL: Output -->
+      <section class="panel panel-right" aria-label="Derivation Output">
+        <!-- Result Banner -->
+        <div id="resultBanner" class="result-banner" hidden></div>
+
+        <!-- Tabs -->
+        <div class="tab-bar" role="tablist">
+          <button class="tab-btn active" role="tab" aria-selected="true" data-tab="tree">🌳 Derivation Tree</button>
+          <button class="tab-btn" role="tab" aria-selected="false" data-tab="steps">📋 Step-by-Step</button>
+          <button class="tab-btn" role="tab" aria-selected="false" data-tab="all">🔍 All Derivations</button>
+          <button class="tab-btn" role="tab" aria-selected="false" data-tab="grammar">📖 Grammar Table</button>
+        </div>
+
+        <!-- Tab: Tree -->
+        <div class="tab-panel active" id="tab-tree">
+          <div class="tree-controls" id="treeControls" hidden>
+            <button class="btn-icon" id="zoomIn" title="Zoom in">＋</button>
+            <button class="btn-icon" id="zoomOut" title="Zoom out">－</button>
+            <button class="btn-icon" id="zoomReset" title="Reset zoom">⟳</button>
+            <span class="zoom-label" id="zoomLabel">100%</span>
+            <button class="btn-secondary btn-sm" id="exportSvgBtn">⬇ Export SVG</button>
+          </div>
+          <div class="tree-viewport" id="treeViewport">
+            <div class="tree-placeholder">
+              <span class="placeholder-icon">🌳</span>
+              <p>Configure grammar and click <strong>Derive</strong> to see the derivation tree</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Steps -->
+        <div class="tab-panel" id="tab-steps">
+          <div class="steps-placeholder placeholder-block">
+            <span class="placeholder-icon">📋</span>
+            <p>Step-by-step derivation will appear here</p>
+          </div>
+          <div class="steps-container" id="stepsContainer" hidden></div>
+        </div>
+
+        <!-- Tab: All Derivations -->
+        <div class="tab-panel" id="tab-all">
+          <div class="all-placeholder placeholder-block">
+            <span class="placeholder-icon">🔍</span>
+            <p>All discovered derivations will appear here</p>
+          </div>
+          <div class="all-container" id="allContainer" hidden></div>
+        </div>
+
+        <!-- Tab: Grammar Table -->
+        <div class="tab-panel" id="tab-grammar">
+          <div class="grammar-table-placeholder placeholder-block">
+            <span class="placeholder-icon">📖</span>
+            <p>Grammar production rules table will appear here</p>
+          </div>
+          <div id="grammarTableContainer" hidden></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="helpModal" role="dialog" aria-modal="true" aria-label="Help dialog" hidden>
+      <div class="modal">
+        <div class="modal-header">
+          <h2>📚 How to Use</h2>
+          <button class="btn-icon" id="closeHelp" aria-label="Close help">✕</button>
+        </div>
+        <div class="modal-body">
+          <h3>1. Grammar Format</h3>
+          <p>Enter production rules in the format <code>LHS → RHS</code>. Use <code>|</code> to separate alternatives:</p>
+          <pre>S → aS | bS | ε</pre>
+          <p>Use <code>→</code> or <code>-></code> as the arrow. Non-terminals are uppercase letters; terminals are lowercase (or digits/symbols).</p>
+
+          <h3>2. Target String</h3>
+          <p>Enter the string you want to derive. Use <code>ε</code> or leave blank for the empty string.</p>
+
+          <h3>3. Max Steps</h3>
+          <p>The maximum number of production rule applications. If the grammar is recursive, a bounded N prevents infinite loops.</p>
+
+          <h3>4. Search Strategy</h3>
+          <ul>
+            <li><strong>BFS</strong> — finds the <em>shortest</em> derivation first (recommended)</li>
+            <li><strong>DFS</strong> — explores one path deeply before backtracking</li>
+          </ul>
+
+          <h3>5. Regular Grammar Rules</h3>
+          <p>A <strong>right-regular grammar</strong> only allows rules of the form:</p>
+          <ul>
+            <li><code>A → aB</code> (terminal followed by non-terminal)</li>
+            <li><code>A → a</code> (single terminal)</li>
+            <li><code>A → ε</code> (empty string)</li>
+          </ul>
+          <p><em>Note: This tool also supports context-free grammars for broader exploration.</em></p>
+
+          <h3>Keyboard Shortcuts</h3>
+          <table class="help-table">
+            <tr><td><kbd>Ctrl+Enter</kbd></td><td>Run derivation</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Close modals</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip-popup" id="tooltipPopup" role="tooltip" hidden></div>
+  </div>
+
+  <script src="grammar.js"></script>
+  <script src="tree-renderer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
