@@ -866,3 +866,47 @@ kbd {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+
+.pwa-platform-help {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  text-align: left;
+  margin: .9rem 0 1rem;
+}
+
+.pwa-step {
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  padding: .75rem;
+  background: var(--clr-surface2);
+  border: 1px solid var(--clr-border);
+  border-radius: 10px;
+}
+
+.pwa-step > span {
+  min-width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--clr-accent);
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.pwa-step strong {
+  display: block;
+  font-size: .86rem;
+  margin-bottom: .15rem;
+}
+
+.pwa-step small {
+  display: block;
+  color: var(--clr-text-muted);
+  font-size: .76rem;
+  line-height: 1.4;
+}
