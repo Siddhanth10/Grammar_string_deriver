@@ -1,6 +1,6 @@
 {
   "name": "grammar-string-deriver-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Desktop wrapper for Grammar String Deriver",
   "main": "electron/main.js",
   "scripts": {
