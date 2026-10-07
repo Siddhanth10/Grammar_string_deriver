@@ -624,14 +624,12 @@ function escapeHtml(str) {
 })();
 
 /* ============================================================
-   Mobile PWA Install — website UI + browser install
+   App Installation Prompt
    ============================================================ */
 
 let deferredInstallPrompt = null;
 
 window.addEventListener('beforeinstallprompt', event => {
-  // Keep the browser's install prompt available for our own
-  // in-site "Install Now" button.
   event.preventDefault();
   deferredInstallPrompt = event;
 });
@@ -641,95 +639,84 @@ function isMobileDevice() {
     (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
 }
 
+function isWindowsDevice() {
+  return /Windows NT/i.test(navigator.userAgent);
+}
+
 function isStandaloneApp() {
   return window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true;
 }
 
-function showMobileInstallPrompt() {
-  if (!isMobileDevice() || isStandaloneApp() ||
-      sessionStorage.getItem('pwaInstallDismissedV3') === '1') return;
+function showInstallPrompt() {
+  if (isStandaloneApp() || sessionStorage.getItem('appInstallDismissedV1') === '1') return;
+
+  const isWindows = isWindowsDevice();
+  const isMobile = isMobileDevice();
+  if (!isWindows && !isMobile) return;
 
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
 
   const overlay = document.createElement('div');
   overlay.id = 'pwaInstallPrompt';
-  overlay.innerHTML = `
-    <div class="pwa-install-card" role="dialog" aria-modal="true" aria-labelledby="pwaInstallTitle">
-      <button class="pwa-close" aria-label="Close">×</button>
-      <div class="pwa-icon">⟨G⟩</div>
-      <h2 id="pwaInstallTitle">Install Grammar String Deriver</h2>
-      <p>Get quick access from your home screen with an app-like experience.</p>
 
-      <div class="pwa-platform-help">
-        ${isIOS ? `
-          <div class="pwa-step">
-            <span>1</span>
-            <div>
-              <strong>Open the Share menu</strong>
-              <small>Tap the Share button in Safari.</small>
-            </div>
-          </div>
-          <div class="pwa-step">
-            <span>2</span>
-            <div>
-              <strong>Add to Home Screen</strong>
-              <small>Tap “Add to Home Screen”, then “Add”.</small>
-            </div>
-          </div>
-        ` : `
-          <div class="pwa-step">
-            <span>✓</span>
-            <div>
-              <strong>One-tap installation</strong>
-              <small>Tap Install Now below. Your browser will ask for final confirmation.</small>
-            </div>
-          </div>
-        `}
-      </div>
-
-      ${isIOS
-        ? '<button class="pwa-install-btn" id="pwaInstallBtn">Got it</button>'
-        : '<button class="pwa-install-btn" id="pwaInstallBtn">Install Now</button>'}
-      <button class="pwa-later" id="pwaLaterBtn">Maybe later</button>
-    </div>
-  `;
+  if (isWindows) {
+    overlay.innerHTML =
+      '<div class="pwa-install-card" role="dialog" aria-modal="true" aria-labelledby="pwaInstallTitle">' +
+      '<button class="pwa-close" aria-label="Close">×</button>' +
+      '<div class="pwa-icon">▣</div>' +
+      '<h2 id="pwaInstallTitle">Install for Windows</h2>' +
+      '<p>Get Grammar String Deriver as a dedicated Windows desktop app.</p>' +
+      '<div class="pwa-platform-help">' +
+      '<div class="pwa-step"><span>1</span><div><strong>Download the installer</strong><small>Get the latest Windows setup file from GitHub.</small></div></div>' +
+      '<div class="pwa-step"><span>2</span><div><strong>Run the installer</strong><small>Follow the Windows setup steps to create your desktop shortcut.</small></div></div>' +
+      '</div>' +
+      '<a class="pwa-install-btn pwa-install-link" href="https://github.com/Siddhanth10/Grammar_string_deriver/releases/latest/download/Grammar%20String%20Deriver%20Setup%201.0.1.exe">Download for Windows</a>' +
+      '<button class="pwa-later" id="pwaLaterBtn">Maybe later</button>' +
+      '</div>';
+  } else {
+    const help = isIOS
+      ? '<div class="pwa-step"><span>1</span><div><strong>Open the Share menu</strong><small>Tap the Share button in Safari.</small></div></div>' +
+        '<div class="pwa-step"><span>2</span><div><strong>Add to Home Screen</strong><small>Tap “Add to Home Screen”, then “Add”.</small></div></div>'
+      : '<div class="pwa-step"><span>✓</span><div><strong>One-tap installation</strong><small>Tap Install Now below. Your browser will ask for final confirmation.</small></div></div>';
+    overlay.innerHTML =
+      '<div class="pwa-install-card" role="dialog" aria-modal="true" aria-labelledby="pwaInstallTitle">' +
+      '<button class="pwa-close" aria-label="Close">×</button>' +
+      '<div class="pwa-icon">⟨G⟩</div>' +
+      '<h2 id="pwaInstallTitle">Install Grammar String Deriver</h2>' +
+      '<p>Get quick access from your home screen with an app-like experience.</p>' +
+      '<div class="pwa-platform-help">' + help + '</div>' +
+      (isIOS ? '<button class="pwa-install-btn" id="pwaInstallBtn">Got it</button>' : '<button class="pwa-install-btn" id="pwaInstallBtn">Install Now</button>') +
+      '<button class="pwa-later" id="pwaLaterBtn">Maybe later</button>' +
+      '</div>';
+  }
 
   document.body.appendChild(overlay);
 
   const close = () => {
-    sessionStorage.setItem('pwaInstallDismissedV3', '1');
+    sessionStorage.setItem('appInstallDismissedV1', '1');
     overlay.remove();
   };
-
-  const installBtn = overlay.querySelector('#pwaInstallBtn');
 
   overlay.querySelector('.pwa-close').addEventListener('click', close);
   overlay.querySelector('#pwaLaterBtn').addEventListener('click', close);
 
-  installBtn.addEventListener('click', async () => {
-    if (isIOS || !deferredInstallPrompt) {
-      close();
-      return;
-    }
-
-    deferredInstallPrompt.prompt();
-
-    try {
-      const choice = await deferredInstallPrompt.userChoice;
-
-      if (choice.outcome === 'accepted') {
+  if (!isWindows) {
+    const installBtn = overlay.querySelector('#pwaInstallBtn');
+    installBtn.addEventListener('click', async () => {
+      if (isIOS || !deferredInstallPrompt) {
         close();
-      } else {
-        installBtn.textContent = 'Install Now';
+        return;
       }
-    } catch (error) {
-      installBtn.textContent = 'Install Now';
-    }
-
-    deferredInstallPrompt = null;
-  });
+      deferredInstallPrompt.prompt();
+      try {
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice.outcome === 'accepted') close();
+      } catch (_) {}
+      deferredInstallPrompt = null;
+    });
+  }
 }
 
 window.addEventListener('appinstalled', () => {
@@ -739,5 +726,5 @@ window.addEventListener('appinstalled', () => {
 });
 
 window.addEventListener('load', () => {
-  setTimeout(showMobileInstallPrompt, 1200);
+  setTimeout(showInstallPrompt, 1200);
 });
