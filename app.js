@@ -39,6 +39,7 @@ const allContainer  = $('allContainer');
 const grammarSummary = $('grammarSummary');
 const summaryContent = $('summaryContent');
 const grammarTableContainer = $('grammarTableContainer');
+const validateStringBtn = $('validateStringBtn');
 
 /* ============================================================
    Rule Editor
@@ -215,30 +216,87 @@ maxSteps.addEventListener('input', () => {
    ============================================================ */
 
 deriveBtn.addEventListener('click', runDerivation);
+validateStringBtn.addEventListener('click', validateTargetFromUI);
+targetString.addEventListener('input', () => {
+  const status = $('stringValidationStatus');
+  if (status) status.hidden = true;
+});
 
-function runDerivation() {
+function buildValidatedGrammar() {
   const lines = getRuleLines();
 
-  // Validate
-  const errors = validateGrammar(lines, startSymbol.value);
-  if (errors.length) {
-    showBanner('failure', '⚠ ' + errors[0]);
-    return;
-  }
   if (!lines.length) {
-    showBanner('failure', '⚠ Please add at least one production rule.');
-    return;
+    throw new Error('Please add at least one production rule.');
   }
 
+  const errors = validateGrammar(lines, startSymbol.value);
+  if (errors.length) throw new Error(errors[0]);
+
+  const grammar = parseGrammar(lines, startSymbol.value);
+
+  const grammarErrors = validateCFGGrammar(grammar);
+  if (grammarErrors.length) throw new Error(grammarErrors[0]);
+
+  return grammar;
+}
+
+function validateTargetFromUI() {
   let grammar;
+
   try {
-    grammar = parseGrammar(lines, startSymbol.value);
+    grammar = buildValidatedGrammar();
   } catch (e) {
-    showBanner('failure', '⚠ Parse error: ' + e.message);
+    showBanner('failure', '⚠ ' + e.message);
+    return false;
+  }
+
+  const target = targetString.value.trim() || 'ε';
+  const validation = validateCFGString(grammar, target);
+  const status = $('stringValidationStatus');
+
+  if (validation.valid) {
+    status.className = 'string-validation valid';
+    status.textContent = '✓ Valid string: all symbols belong to the grammar terminal alphabet.';
+    status.hidden = false;
+    showBanner('success', `✓ "${escapeHtml(target)}" is a valid CFG string and can be checked for derivability.`);
+    return true;
+  }
+
+  status.className = 'string-validation invalid';
+  status.innerHTML = `✕ Invalid symbol(s): <strong>${validation.invalidSymbols.map(escapeHtml).join(', ')}</strong>. Allowed terminals: <strong>${validation.allowedTerminals.length ? validation.allowedTerminals.map(escapeHtml).join(', ') : 'none'}</strong>.`;
+  status.hidden = false;
+  showBanner('failure', '⚠ ' + validation.message);
+  return false;
+}
+
+function runDerivation() {
+  let grammar;
+
+  try {
+    grammar = buildValidatedGrammar();
+  } catch (e) {
+    showBanner('failure', '⚠ ' + e.message);
     return;
   }
 
   const target = targetString.value.trim() || 'ε';
+
+  // Validate the target before starting BFS/DFS.
+  const validation = validateCFGString(grammar, target);
+  const status = $('stringValidationStatus');
+
+  if (!validation.valid) {
+    status.className = 'string-validation invalid';
+    status.innerHTML = `✕ Invalid symbol(s): <strong>${validation.invalidSymbols.map(escapeHtml).join(', ')}</strong>. Allowed terminals: <strong>${validation.allowedTerminals.length ? validation.allowedTerminals.map(escapeHtml).join(', ') : 'none'}</strong>.`;
+    status.hidden = false;
+    showBanner('failure', '⚠ ' + validation.message);
+    return;
+  }
+
+  status.className = 'string-validation valid';
+  status.textContent = '✓ All target symbols are valid terminals.';
+  status.hidden = false;
+
   const N = parseInt(maxSteps.value, 10) || 10;
   const strat = strategy.value;
 
@@ -438,6 +496,8 @@ resetBtn.addEventListener('click', () => {
   ruleEditor.appendChild(createRuleRow('S → aS | b'));
   startSymbol.value = 'S';
   targetString.value = 'aab';
+  const stringStatus = $('stringValidationStatus');
+  if (stringStatus) stringStatus.hidden = true;
   maxSteps.value = 10;
   maxStepsRange.value = 10;
   resultBanner.hidden = true;
