@@ -235,7 +235,7 @@ function simplifyTargetString(str) {
 
   // Symbols in this tool are single-character terminals, so whitespace
   // between symbols is presentation-only and can be safely removed.
-  return trimmed.replace(/\\s+/g, '');
+  return trimmed.replace(/\s+/g, '');
 }
 
 function simplifyTargetFromUI() {
@@ -318,7 +318,8 @@ function runDerivation() {
     return;
   }
 
-  const target = targetString.value.trim() || 'ε';
+  const target = simplifyTargetString(targetString.value);
+  targetString.value = target;
 
   // Validate the target before starting BFS/DFS.
   const validation = validateCFGString(grammar, target);
