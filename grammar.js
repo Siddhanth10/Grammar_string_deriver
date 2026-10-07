@@ -390,6 +390,74 @@ function collectLeaves(node, result) {
 }
 
 /**
+ * Validates the parsed grammar as a context-free grammar.
+ *
+ * A CFG must have exactly one non-terminal on the left side of
+ * every production. The parser already enforces the single-symbol
+ * LHS format, so this function mainly checks for missing rules.
+ */
+function validateCFGGrammar(grammar) {
+  const errors = [];
+
+  if (!grammar.start || !grammar.nonTerminals.has(grammar.start)) {
+    errors.push(`Start symbol "${grammar.start}" is not defined as a non-terminal.`);
+  }
+
+  for (const nt of grammar.nonTerminals) {
+    if (!grammar.rules.has(nt) || grammar.rules.get(nt).length === 0) {
+      errors.push(`Non-terminal "${nt}" is used but has no production rule.`);
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Validates a target string against the terminal alphabet of the CFG.
+ *
+ * This is symbol validation, not membership testing. A string can use
+ * only valid terminals and still be impossible to derive; BFS/DFS
+ * performs the actual CFG membership search afterward.
+ */
+function validateCFGString(grammar, targetStr) {
+  const target = normalizeTarget(targetStr);
+
+  if (target === 'ε') {
+    return {
+      valid: true,
+      invalidSymbols: [],
+      allowedTerminals: [...grammar.terminals],
+      message: 'The empty string ε is valid for symbol checking.'
+    };
+  }
+
+  const allowed = new Set(grammar.terminals);
+  const invalid = [];
+
+  for (const symbol of target) {
+    if (symbol === 'ε' || !allowed.has(symbol)) {
+      if (!invalid.includes(symbol)) invalid.push(symbol);
+    }
+  }
+
+  if (invalid.length) {
+    return {
+      valid: false,
+      invalidSymbols: invalid,
+      allowedTerminals: [...grammar.terminals],
+      message: `Target string contains symbol(s) not in the grammar terminal alphabet: ${invalid.join(', ')}.`
+    };
+  }
+
+  return {
+    valid: true,
+    invalidSymbols: [],
+    allowedTerminals: [...grammar.terminals],
+    message: 'All target symbols are valid terminals.'
+  };
+}
+
+/**
  * Validates grammar rules and returns an array of error messages.
  */
 function validateGrammar(ruleLines, startSym) {
