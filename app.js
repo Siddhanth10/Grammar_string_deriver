@@ -40,7 +40,6 @@ const grammarSummary = $('grammarSummary');
 const summaryContent = $('summaryContent');
 const grammarTableContainer = $('grammarTableContainer');
 const validateStringBtn = $('validateStringBtn');
-const simplifyStringBtn = $('simplifyStringBtn');
 
 /* ============================================================
    Rule Editor
@@ -217,7 +216,6 @@ maxSteps.addEventListener('input', () => {
    ============================================================ */
 
 deriveBtn.addEventListener('click', runDerivation);
-simplifyStringBtn.addEventListener('click', simplifyTargetFromUI);
 validateStringBtn.addEventListener('click', validateTargetFromUI);
 targetString.addEventListener('input', () => {
   const status = $('stringValidationStatus');
@@ -236,28 +234,6 @@ function simplifyTargetString(str) {
   // Symbols in this tool are single-character terminals, so whitespace
   // between symbols is presentation-only and can be safely removed.
   return trimmed.replace(/\s+/g, '');
-}
-
-function simplifyTargetFromUI() {
-  const original = targetString.value;
-  const simplified = simplifyTargetString(original);
-
-  targetString.value = simplified;
-
-  const status = $('stringValidationStatus');
-  if (original.trim() !== simplified) {
-    status.className = 'string-validation simplified';
-    status.textContent = `✓ Simplified: "${original}" → "${simplified}"`;
-    status.hidden = false;
-    showBanner('info', `String simplified to "${simplified}".`);
-  } else {
-    status.className = 'string-validation simplified';
-    status.textContent = `✓ String is already simplified: "${simplified}".`;
-    status.hidden = false;
-    showBanner('info', 'The target string is already simplified.');
-  }
-
-  return simplified;
 }
 
 function buildValidatedGrammar() {
