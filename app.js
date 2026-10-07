@@ -672,7 +672,7 @@ function showInstallPrompt() {
       '<div class="pwa-step"><span>1</span><div><strong>Download the installer</strong><small>Get the latest Windows setup file from GitHub.</small></div></div>' +
       '<div class="pwa-step"><span>2</span><div><strong>Run the installer</strong><small>Follow the Windows setup steps to create your desktop shortcut.</small></div></div>' +
       '</div>' +
-      '<a class="pwa-install-btn pwa-install-link" href="https://github.com/Siddhanth10/Grammar_string_deriver/releases/latest/download/Grammar%20String%20Deriver%20Setup%201.0.1.exe">Download for Windows</a>' +
+      '<a class="pwa-install-btn pwa-install-link" href="https://github.com/Siddhanth10/Grammar_string_deriver/releases/download/desktop-latest/Grammar%20String%20Deriver%20Setup%201.0.1.exe">Download for Windows</a>' +
       '<button class="pwa-later" id="pwaLaterBtn">Maybe later</button>' +
       '</div>';
   } else {
