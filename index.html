@@ -73,7 +73,6 @@
           <label for="targetString">Target String <span class="badge">required</span></label>
           <input type="text" id="targetString" placeholder='e.g. aab  (use ε for empty)' value="aab" />
           <div class="target-actions">
-            <button class="btn-secondary btn-sm" id="simplifyStringBtn">✦ Simplify</button>
             <button class="btn-secondary btn-sm" id="validateStringBtn">✓ Validate String</button>
           </div>
           <div id="stringValidationStatus" class="string-validation" hidden></div>
@@ -182,7 +181,7 @@
           <p>Use <code>→</code> or <code>-></code> as the arrow. Non-terminals are uppercase letters; terminals are lowercase (or digits/symbols).</p>
 
           <h3>2. Target String</h3>
-          <p>Enter the string you want to derive. Use <code>✦ Simplify</code> to trim whitespace, remove spaces between symbols, and normalize empty-string notation to <code>ε</code>.</p>
+          <p>Enter the string you want to derive. Use <code>ε</code> or leave blank for the empty string.</p>
 
           <h3>3. Max Steps</h3>
           <p>The maximum number of production rule applications. If the grammar is recursive, a bounded N prevents infinite loops.</p>
