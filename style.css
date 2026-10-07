@@ -249,6 +249,32 @@ body {
   text-align: center;
 }
 
+/* ---------- Target String Validation ---------- */
+.target-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: .15rem;
+}
+
+.string-validation {
+  border-radius: var(--radius-sm);
+  font-size: .78rem;
+  line-height: 1.45;
+  padding: .55rem .7rem;
+}
+
+.string-validation.valid {
+  background: rgba(0,217,166,.10);
+  border: 1px solid var(--clr-success);
+  color: var(--clr-success);
+}
+
+.string-validation.invalid {
+  background: rgba(255,107,107,.10);
+  border: 1px solid var(--clr-error);
+  color: var(--clr-error);
+}
+
 /* ---------- Buttons ---------- */
 .btn-primary, .btn-secondary {
   border: none;
