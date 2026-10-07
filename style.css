@@ -944,3 +944,8 @@ kbd {
   border: 1px solid var(--clr-accent);
   color: var(--clr-accent);
 }
+
+
+/* ---------- Windows Installer Link ---------- */
+.pwa-install-link { display:block; text-decoration:none; text-align:center; }
+.pwa-install-link:hover { filter:brightness(1.08); }
