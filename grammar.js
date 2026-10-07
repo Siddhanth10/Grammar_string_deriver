@@ -148,63 +148,79 @@ function derive(grammar, targetStr, maxSteps, strategy = 'bfs') {
   DerivationNode._nextId = 0;
 
   const target = normalizeTarget(targetStr);
+  const targetNorm = target === 'ε' ? '' : target;
 
-  // Build initial state
   const rootNode = new DerivationNode(grammar.start, null, null);
   const initSentential = [grammar.start];
 
-  // Check if start symbol exists in rules
   if (!grammar.rules.has(grammar.start)) {
-    return { success: false, steps: [], tree: null, allDerivations: [], stepsChecked: 0, error: `Start symbol "${grammar.start}" has no production rules.` };
+    return {
+      success: false,
+      steps: [],
+      tree: null,
+      allDerivations: [],
+      stepsChecked: 0,
+      error: `Start symbol "${grammar.start}" has no production rules.`
+    };
   }
 
-  const queue = [{
-    sentential: [...initSentential],
+  /*
+   * IMPORTANT:
+   * BFS and DFS must search the derivation STATE space, not a globally
+   * visited set of sentential strings. The same sentential form can be
+   * reached through different derivation histories and therefore have
+   * different trees. A global visited set was causing valid DFS/BFS
+   * branches to be discarded and could make their displayed trees look
+   * identical.
+   */
+  const initialState = {
+    sentential: initSentential,
     steps: [],
-    nodeMap: new Map([[grammar.start + ':0', rootNode]]),
     root: rootNode,
     stepCount: 0,
-  }];
+  };
 
-  const visited = new Set();
-  visited.add(serializeSentential(initSentential));
-
+  const frontier = [initialState];
   let stepsChecked = 0;
   const allSuccessDerivations = [];
   let firstSuccess = null;
 
-  const structure = strategy === 'bfs' ? 'queue' : 'stack';
+  while (frontier.length > 0) {
+    if (stepsChecked++ >= 200000) break;
 
-  while (queue.length > 0) {
-    stepsChecked++;
-    if (stepsChecked > 200000) break; // Safety
+    const state = strategy === 'dfs'
+      ? frontier.pop()
+      : frontier.shift();
 
-    const state = structure === 'queue' ? queue.shift() : queue.pop();
-    const { sentential, steps, nodeMap, root, stepCount } = state;
+    const { sentential, steps, root, stepCount } = state;
 
-    // Check if current sentential matches target
+    // Target check
     if (isTerminalString(sentential)) {
       const derived = sentential.join('');
-      const derivedStr = derived === 'ε' ? '' : derived;
-      const targetNorm = target === 'ε' ? '' : target;
+      const derivedNorm = derived === 'ε' ? '' : derived;
 
-      if (derivedStr === targetNorm) {
+      if (derivedNorm === targetNorm) {
         const derivResult = { steps, tree: root };
-        allSuccessDerivations.push(steps);
+        allSuccessDerivations.push(derivResult);
+
         if (!firstSuccess) {
           firstSuccess = derivResult;
-          // If BFS, we have the shortest — return early
+
+          // BFS naturally returns the shallowest successful derivation.
+          // DFS returns its first depth-first successful derivation.
           if (strategy === 'bfs') break;
         }
-        if (allSuccessDerivations.length >= 10) break; // cap
-        continue;
+
+        if (allSuccessDerivations.length >= 10) break;
       }
-      continue; // terminal string but not our target
+
+      continue;
     }
 
     if (stepCount >= maxSteps) continue;
 
-    // Find leftmost non-terminal
+    // This remains a leftmost derivation, while BFS/DFS controls
+    // the order in which alternative derivation states are explored.
     const ntIdx = sentential.findIndex(sym => isNonTerminal(sym));
     if (ntIdx === -1) continue;
 
@@ -212,56 +228,69 @@ function derive(grammar, targetStr, maxSteps, strategy = 'bfs') {
     const productions = grammar.rules.get(nt);
     if (!productions) continue;
 
-    for (const prod of productions) {
-      // Apply production: replace sentential[ntIdx] with prod
-      const newSentential = [
+    /*
+     * For DFS, push alternatives in reverse order because the stack is
+     * LIFO. This makes DFS explore productions in the same written order
+     * as the grammar: first alternative first, then second, etc.
+     *
+     * BFS keeps the normal production order.
+     */
+    const orderedProductions = strategy === 'dfs'
+      ? [...productions].reverse()
+      : productions;
+
+    for (const prod of orderedProductions) {
+      const isEps = prod.length === 1 && prod[0] === 'ε';
+
+      const replacement = isEps ? [] : prod;
+      const finalSentential = [
         ...sentential.slice(0, ntIdx),
-        ...prod.filter(s => s !== 'ε'),
-        ...sentential.slice(ntIdx + 1),
+        ...replacement,
+        ...sentential.slice(ntIdx + 1)
       ];
 
-      // Handle epsilon → produces empty (remove the nt)
-      const isEps = prod.length === 1 && prod[0] === 'ε';
-      const newSententialWithEps = isEps
-        ? [...sentential.slice(0, ntIdx), ...sentential.slice(ntIdx + 1)]
-        : [...sentential.slice(0, ntIdx), ...prod, ...sentential.slice(ntIdx + 1)];
+      const normalizedSentential =
+        finalSentential.length === 0 ? ['ε'] : finalSentential;
 
-      const finalSentential = newSententialWithEps.length === 0 ? ['ε'] : newSententialWithEps;
-
-      const serialized = serializeSentential(finalSentential) + ':' + stepCount;
-      if (visited.has(serialized) && strategy === 'bfs') continue;
-      visited.add(serialized);
-
-      // Clone tree and apply production
+      // Clone the complete derivation tree for this branch.
       const newRoot = cloneNode(root, null);
-      const nodeId = nt + ':' + ntIdx;
-      const targetNode = findNodeBySymbolIndex(newRoot, nt, ntIdx, sentential);
+
+      const targetNode =
+        findNodeBySymbolIndex(newRoot, nt, ntIdx, sentential);
 
       if (targetNode) {
         if (isEps) {
-          const epsChild = new DerivationNode('ε', targetNode, `${nt} → ε`);
+          const epsChild =
+            new DerivationNode('ε', targetNode, `${nt} → ε`);
           targetNode.children.push(epsChild);
         } else {
           for (const sym of prod) {
-            const child = new DerivationNode(sym, targetNode, `${nt} → ${prod.join('')}`);
+            const child =
+              new DerivationNode(sym, targetNode, `${nt} → ${prod.join('')}`);
             targetNode.children.push(child);
           }
         }
-        targetNode.ruleApplied = `${nt} → ${prod.join('')}`;
+
+        targetNode.ruleApplied =
+          `${nt} → ${isEps ? 'ε' : prod.join('')}`;
       }
 
-      const ruleText = `${nt} → ${isEps ? 'ε' : prod.join(' ')}`;
-      const newSteps = [...steps, {
-        sentential: [...finalSentential],
-        ruleText,
-        appliedNT: nt,
-        appliedAt: ntIdx,
-      }];
+      const ruleText =
+        `${nt} → ${isEps ? 'ε' : prod.join(' ')}`;
 
-      queue.push({
-        sentential: finalSentential,
+      const newSteps = [
+        ...steps,
+        {
+          sentential: [...normalizedSentential],
+          ruleText,
+          appliedNT: nt,
+          appliedAt: ntIdx,
+        }
+      ];
+
+      frontier.push({
+        sentential: normalizedSentential,
         steps: newSteps,
-        nodeMap: new Map(),
         root: newRoot,
         stepCount: stepCount + 1,
       });
@@ -273,7 +302,7 @@ function derive(grammar, targetStr, maxSteps, strategy = 'bfs') {
       success: true,
       steps: firstSuccess.steps,
       tree: firstSuccess.tree,
-      allDerivations: allSuccessDerivations,
+      allDerivations: allSuccessDerivations.map(d => d.steps),
       stepsChecked,
     };
   }
