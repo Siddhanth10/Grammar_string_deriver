@@ -936,3 +936,11 @@ kbd {
   font-size: .76rem;
   line-height: 1.4;
 }
+
+
+/* ---------- String Simplification ---------- */
+.string-validation.simplified {
+  background: rgba(108,99,255,.10);
+  border: 1px solid var(--clr-accent);
+  color: var(--clr-accent);
+}
