@@ -1,4 +1,4 @@
-const CACHE_NAME = 'grammar-string-deriver-v2';
+const CACHE_NAME = 'grammar-string-deriver-v3';
 
 const APP_SHELL = [
   '/',
