@@ -22,7 +22,7 @@
           <span class="logo-icon">⟨G⟩</span>
           <div>
             <h1>Grammar String Deriver</h1>
-            <p class="tagline">Visualize derivation trees for regular grammars</p>
+            <p class="tagline">Validate CFG strings and visualize derivation trees</p>
           </div>
         </div>
         <nav class="header-nav">
@@ -72,6 +72,10 @@
         <div class="form-group">
           <label for="targetString">Target String <span class="badge">required</span></label>
           <input type="text" id="targetString" placeholder='e.g. aab  (use ε for empty)' value="aab" />
+          <div class="target-actions">
+            <button class="btn-secondary btn-sm" id="validateStringBtn">✓ Validate String</button>
+          </div>
+          <div id="stringValidationStatus" class="string-validation" hidden></div>
         </div>
 
         <div class="form-group">
