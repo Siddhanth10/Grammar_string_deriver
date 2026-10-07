@@ -548,8 +548,17 @@ function escapeHtml(str) {
 })();
 
 /* ============================================================
-   Mobile PWA Install Prompt — in-website instructions only
+   Mobile PWA Install — website UI + browser install
    ============================================================ */
+
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', event => {
+  // Keep the browser's install prompt available for our own
+  // in-site "Install Now" button.
+  event.preventDefault();
+  deferredInstallPrompt = event;
+});
 
 function isMobileDevice() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
@@ -563,7 +572,7 @@ function isStandaloneApp() {
 
 function showMobileInstallPrompt() {
   if (!isMobileDevice() || isStandaloneApp() ||
-      sessionStorage.getItem('pwaInstallDismissedV2') === '1') return;
+      sessionStorage.getItem('pwaInstallDismissedV3') === '1') return;
 
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.maxTouchPoints > 1 && /Macintosh/i.test(navigator.userAgent));
@@ -578,23 +587,35 @@ function showMobileInstallPrompt() {
       <p>Get quick access from your home screen with an app-like experience.</p>
 
       <div class="pwa-platform-help">
-        <div class="pwa-step">
-          <span>1</span>
-          <div>
-            <strong>${isIOS ? 'Open the Share menu' : 'Open your browser menu'}</strong>
-            <small>${isIOS ? 'Tap the Share button in Safari.' : 'Tap ⋮ in Chrome or your browser.'}</small>
+        ${isIOS ? `
+          <div class="pwa-step">
+            <span>1</span>
+            <div>
+              <strong>Open the Share menu</strong>
+              <small>Tap the Share button in Safari.</small>
+            </div>
           </div>
-        </div>
-        <div class="pwa-step">
-          <span>2</span>
-          <div>
-            <strong>${isIOS ? 'Choose “Add to Home Screen”' : 'Choose “Install app” or “Add to Home screen”'}</strong>
-            <small>${isIOS ? 'Then tap Add to finish.' : 'The exact wording may vary by browser.'}</small>
+          <div class="pwa-step">
+            <span>2</span>
+            <div>
+              <strong>Add to Home Screen</strong>
+              <small>Tap “Add to Home Screen”, then “Add”.</small>
+            </div>
           </div>
-        </div>
+        ` : `
+          <div class="pwa-step">
+            <span>✓</span>
+            <div>
+              <strong>One-tap installation</strong>
+              <small>Tap Install Now below. Your browser will ask for final confirmation.</small>
+            </div>
+          </div>
+        `}
       </div>
 
-      <button class="pwa-install-btn" id="pwaInstallBtn">✓ Got it</button>
+      ${isIOS
+        ? '<button class="pwa-install-btn" id="pwaInstallBtn">Got it</button>'
+        : '<button class="pwa-install-btn" id="pwaInstallBtn">Install Now</button>'}
       <button class="pwa-later" id="pwaLaterBtn">Maybe later</button>
     </div>
   `;
@@ -602,16 +623,41 @@ function showMobileInstallPrompt() {
   document.body.appendChild(overlay);
 
   const close = () => {
-    sessionStorage.setItem('pwaInstallDismissedV2', '1');
+    sessionStorage.setItem('pwaInstallDismissedV3', '1');
     overlay.remove();
   };
 
+  const installBtn = overlay.querySelector('#pwaInstallBtn');
+
   overlay.querySelector('.pwa-close').addEventListener('click', close);
   overlay.querySelector('#pwaLaterBtn').addEventListener('click', close);
-  overlay.querySelector('#pwaInstallBtn').addEventListener('click', close);
+
+  installBtn.addEventListener('click', async () => {
+    if (isIOS || !deferredInstallPrompt) {
+      close();
+      return;
+    }
+
+    deferredInstallPrompt.prompt();
+
+    try {
+      const choice = await deferredInstallPrompt.userChoice;
+
+      if (choice.outcome === 'accepted') {
+        close();
+      } else {
+        installBtn.textContent = 'Install Now';
+      }
+    } catch (error) {
+      installBtn.textContent = 'Install Now';
+    }
+
+    deferredInstallPrompt = null;
+  });
 }
 
 window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
   const prompt = document.getElementById('pwaInstallPrompt');
   if (prompt) prompt.remove();
 });
