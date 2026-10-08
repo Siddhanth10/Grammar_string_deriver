@@ -15,6 +15,7 @@ let panZoom = null;
 let currentSvg = null;
 let currentGrammar = null;
 let currentResult = null;
+let lastFocusedRuleInput = null;
 
 /* ============================================================
    DOM References
@@ -56,6 +57,10 @@ function createRuleRow(value = '') {
   input.setAttribute('aria-label', 'Production rule');
   input.spellcheck = false;
 
+  input.addEventListener('focus', () => {
+    lastFocusedRuleInput = input;
+  });
+
   input.addEventListener('input', () => {
     input.classList.remove('rule-error');
     updateGrammarSummary();
@@ -91,6 +96,23 @@ function getRuleLines() {
 addRuleBtn.addEventListener('click', () => {
   ruleEditor.appendChild(createRuleRow());
   ruleEditor.lastElementChild.querySelector('input').focus();
+});
+
+document.querySelectorAll('.symbol-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = lastFocusedRuleInput || ruleEditor.querySelector('input');
+    if (!input) return;
+
+    const symbol = btn.dataset.symbol;
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? start;
+
+    input.value = input.value.slice(0, start) + symbol + input.value.slice(end);
+    input.focus();
+    const cursor = start + symbol.length;
+    input.setSelectionRange(cursor, cursor);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
 });
 
 /* ============================================================
