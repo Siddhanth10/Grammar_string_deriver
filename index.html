@@ -51,6 +51,12 @@
             <span class="tooltip-anchor" data-tooltip="Format: A → aB | b | ε  (one rule per line)">ⓘ</span>
           </label>
           <div class="rule-editor" id="ruleEditor" aria-label="Production rules editor"></div>
+          <div class="symbol-toolbar" aria-label="Grammar symbol shortcuts">
+            <span class="symbol-toolbar-label">Insert:</span>
+            <button type="button" class="symbol-btn" data-symbol="ε" title="Insert epsilon">ε</button>
+            <button type="button" class="symbol-btn" data-symbol="|" title="Insert alternative separator">|</button>
+            <button type="button" class="symbol-btn" data-symbol="→" title="Insert production arrow">→</button>
+          </div>
           <button class="btn-secondary btn-sm" id="addRuleBtn">+ Add Rule</button>
         </div>
 
