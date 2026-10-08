@@ -475,7 +475,7 @@ function renderAllDerivations(start, allDerivations) {
     card.innerHTML = `
       <div class="derivation-card-header">
         <strong>Derivation ${idx + 1}</strong>
-        <span style="color:var(--clr-text-muted);font-size:.8rem">${steps.length} step${steps.length !== 1 ? 's' : ''} ▾</span>
+        <span style="color:var(--clr-text-muted);font-size:.8rem">${steps.length} step${steps.length !== 1 ? 's' : ''}</span>
       </div>
       <div class="derivation-card-body">
         <div class="derivation-steps-list">
@@ -484,10 +484,6 @@ function renderAllDerivations(start, allDerivations) {
         </div>
       </div>
     `;
-
-    card.querySelector('.derivation-card-header').addEventListener('click', () => {
-      card.classList.toggle('open');
-    });
 
     container.appendChild(card);
   });
