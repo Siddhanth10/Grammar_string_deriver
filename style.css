@@ -569,26 +569,21 @@ body {
 }
 
 .derivation-card-header {
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: .65rem 1rem;
   user-select: none;
+  border-bottom: 1px solid var(--clr-border);
 }
 
-.derivation-card-header:hover { background: var(--clr-border); }
-
 .derivation-card-body {
-  border-top: 1px solid var(--clr-border);
-  display: none;
+  display: block;
   font-family: var(--font-mono);
   font-size: .85rem;
   padding: .75rem 1rem;
   overflow-x: auto;
 }
-
-.derivation-card.open .derivation-card-body { display: block; }
 
 .derivation-arrow { color: var(--clr-accent); margin: 0 .4rem; }
 .derivation-steps-list { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem; }
